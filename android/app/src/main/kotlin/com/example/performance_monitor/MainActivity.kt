@@ -11,7 +11,7 @@ class MainActivity: FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         
-        // FIX LỖI BINARYMESSENGER: Truy cập chính xác thông qua dartExecutor để lấy binaryMessenger
+        // Gọi chính xác thông qua dartExecutor để loại bỏ lỗi biên dịch binaryMessenger
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "getTelemetry" -> {
