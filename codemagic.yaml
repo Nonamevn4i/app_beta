@@ -15,17 +15,21 @@ workflows:
         - pattern: main
           include: true
     scripts:
-      - name: Generate Icon And Build APK
+      - name: Build APK
         script: |
+          #!/usr/bin/env bash
+          set -e
           flutter clean
           flutter pub get
           
+          # Try generating launcher icons, but continue if it fails
           echo "Generating launcher icons..."
-          dart run flutter_launcher_icons
+          dart run flutter_launcher_icons || echo "Warning: Icon generation skipped"
           
+          echo "Building release APK..."
           flutter build apk --release \
             --target-platform android-arm64 \
-            --dart-define=GEMINI_API_KEY=$GEMINI_API_KEY \
-            --android-skip-build-dependency-validation
+            --dart-define=GEMINI_API_KEY="$GEMINI_API_KEY" \
+            --android-skip-build-dependency-validation 2>&1
     artifacts:
       - build/app/outputs/flutter-apk/app-release.apk
