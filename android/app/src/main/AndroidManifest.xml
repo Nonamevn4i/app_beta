@@ -12,7 +12,7 @@
     <application
         android:label="NEXUS Overlay"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@mimap/launcher_icon"
         android:theme="@style/LaunchTheme"
         android:supportsRtl="true"
         android:hardwareAccelerated="true">
