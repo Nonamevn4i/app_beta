@@ -22,9 +22,10 @@
             <meta-data
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"/>
+            
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.android.intent.category.LAUNCHER"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
         
@@ -38,4 +39,3 @@
             android:value="2" />
     </application>
 </manifest>
-
