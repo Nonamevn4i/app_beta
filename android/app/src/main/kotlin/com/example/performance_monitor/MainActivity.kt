@@ -1,6 +1,5 @@
 package com.example.performance_monitor
 
-import android.content.Context
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -11,7 +10,6 @@ class MainActivity: FlutterActivity() {
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
         
-        // Gọi chính xác thông qua dartExecutor để loại bỏ lỗi biên dịch binaryMessenger
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "getTelemetry" -> {
@@ -41,3 +39,4 @@ class MainActivity: FlutterActivity() {
         }
     }
 }
+
