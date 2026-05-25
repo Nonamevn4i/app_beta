@@ -13,12 +13,12 @@ dependencies:
   fl_chart: ^0.69.2
   permission_handler: ^11.2.0
   http: ^1.2.0
-  google_generative_ai: ^0.4.3
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_launcher_icons: ^0.13.1
+  flutter_lints: ^3.0.0
+  flutter_launcher_icons: ^0.14.3
 
 flutter:
   uses-material-design: true
@@ -29,4 +29,3 @@ flutter_launcher_icons:
   android: "launcher_icon"
   image_path: "assets/app_icon.png"
   min_sdk_android: 21
-  

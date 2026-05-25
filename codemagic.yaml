@@ -6,6 +6,8 @@ workflows:
     environment:
       flutter: stable
       java: 17
+      vars:
+        GEMINI_API_KEY: ""  # Set this in Codemagic UI > Environment variables
     triggering:
       events:
         - push
@@ -18,12 +20,12 @@ workflows:
           flutter clean
           flutter pub get
           
-          echo "Đang tự động khởi tạo bộ Icon mới..."
+          echo "Generating launcher icons..."
           dart run flutter_launcher_icons
           
           flutter build apk --release \
             --target-platform android-arm64 \
+            --dart-define=GEMINI_API_KEY=$GEMINI_API_KEY \
             --android-skip-build-dependency-validation
     artifacts:
       - build/app/outputs/flutter-apk/app-release.apk
-      
