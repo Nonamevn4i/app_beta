@@ -18,9 +18,9 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
 
 // =================================================================
-// 1. LỚP BỌC CHUẨN FLUTTER PLUGIN ĐỂ KẾT NỐI VỚI DỰ ÁN FLUTTER
+// 1. LỚP BỌC FLUTTER PLUGIN ĐỂ NHẬN LỆNH TỪ FLUTTER (NẾU CÓ)
 // =================================================================
-class PerformancePlugin: FlutterPlugin, MethodCallHandler {
+class PerformanceMonitorPlugin: FlutterPlugin, MethodCallHandler {
     private lateinit var channel : MethodChannel
     private lateinit var context: Context
 
@@ -32,29 +32,12 @@ class PerformancePlugin: FlutterPlugin, MethodCallHandler {
 
     override fun onMethodCall(call: MethodCall, result: Result) {
         when (call.method) {
-            "getTelemetry" -> {
-                val data = PerformancePluginObject.getTelemetry(context)
-                result.success(data)
-            }
-            "getCpuCoreDetails" -> {
-                val data = PerformancePluginObject.getCpuCoreDetails()
-                result.success(data)
-            }
-            "getNetworkStats" -> {
-                val data = PerformancePluginObject.getNetworkStats()
-                result.success(data)
-            }
-            "getBatteryInfo" -> {
-                val data = PerformancePluginObject.getBatteryInfo(context)
-                result.success(data)
-            }
-            "getRamInfo" -> {
-                val data = PerformancePluginObject.getRamInfo(context)
-                result.success(data)
-            }
-            else -> {
-                result.notImplemented()
-            }
+            "getTelemetry" -> result.success(PerformancePlugin.getTelemetry(context))
+            "getCpuCoreDetails" -> result.success(PerformancePlugin.getCpuCoreDetails())
+            "getNetworkStats" -> result.success(PerformancePlugin.getNetworkStats())
+            "getBatteryInfo" -> result.success(PerformancePlugin.getBatteryInfo(context))
+            "getRamInfo" -> result.success(PerformancePlugin.getRamInfo(context))
+            else -> result.notImplemented()
         }
     }
 
@@ -64,11 +47,11 @@ class PerformancePlugin: FlutterPlugin, MethodCallHandler {
 }
 
 // =================================================================
-// 2. GIỮ NGUYÊN 100% LOGIC ĐO ĐẠC GỐC CỦA BẠN (ĐÃ SỬA LỖI ÉP KIỂU)
+// 2. OBJECT TÍNH NĂNG GỐC - ĐÃ VÁ LỖI KIỂU DỮ LIỆU & BIẾN
 // =================================================================
-object PerformancePluginObject {
+object PerformancePlugin {
 
-    // Sửa thành Map<String, Any?> để triệt tiêu lỗi Return type mismatch
+    // Thay đổi kiểu Map thành Any? để sửa triệt để lỗi Return type mismatch
     fun getTelemetry(context: Context): Map<String, Any?> {
         val cpuInfo = getCpuUsage()
         val gpuInfo = getGpuInfo()
@@ -89,8 +72,8 @@ object PerformancePluginObject {
             "ramUsage" to ram["usage"],
             "ramTotal" to ram["total"],
             "throttleStatus" to getThrottleStatus(
-                (temps["cpuTemp"] as Double?)?.toInt() ?: 0,
-                (temps["gpuTemp"] as Double?)?.toInt() ?: 0
+                (temps["cpuTemp"] as? Double)?.toInt() ?: 0,
+                (temps["gpuTemp"] as? Double)?.toInt() ?: 0
             )
         )
     }
@@ -102,7 +85,7 @@ object PerformancePluginObject {
             val freq = try {
                 BufferedReader(FileReader("/sys/devices/system/cpu/cpu$i/cpufreq/scaling_cur_freq"))
                     .use { it.readLine()?.toLong()?.div(1000) ?: 0 }
-            } catch (e: Exception) { 0 }
+            } catch (e: Exception) { 0L }
             cores.add(mapOf(
                 "core" to i,
                 "frequency" to freq,
@@ -116,13 +99,13 @@ object PerformancePluginObject {
 
     private fun getMaxFreq(core: Int): Long = try {
         BufferedReader(FileReader("/sys/devices/system/cpu/cpu$core/cpufreq/cpuinfo_max_freq"))
-            .use { it.readLine()?.toLong()?.div(1000) ?: 0 }
-    } catch (e: Exception) { 0 }
+            .use { it.readLine()?.toLong()?.div(1000) ?: 0L }
+    } catch (e: Exception) { 0L }
 
     private fun getMinFreq(core: Int): Long = try {
         BufferedReader(FileReader("/sys/devices/system/cpu/cpu$core/cpufreq/cpuinfo_min_freq"))
-            .use { it.readLine()?.toLong()?.div(1000) ?: 0 }
-    } catch (e: Exception) { 0 }
+            .use { it.readLine()?.toLong()?.div(1000) ?: 0L }
+    } catch (e: Exception) { 0L }
 
     private fun getGovernor(core: Int): String = try {
         BufferedReader(FileReader("/sys/devices/system/cpu/cpu$core/cpufreq/scaling_governor"))
@@ -169,7 +152,7 @@ object PerformancePluginObject {
             BufferedReader(FileReader("/sys/class/kgsl/kgsl-3d0/devfreq/cur_freq"))
                 .use { it.readLine()?.toLong()?.div(1000000) ?: 0L }
         } catch (e: Exception) { 0L }
-        val usage = try {
+        return try {
             val gpuFile = RandomAccessFile("/sys/class/kgsl/kgsl-3d0/gpubusy", "r")
             val line = gpuFile.readLine() ?: return mapOf("usage" to 0.0, "freq" to freq.toDouble())
             gpuFile.close()
@@ -177,7 +160,7 @@ object PerformancePluginObject {
             if (parts.size < 2) return mapOf("usage" to 0.0, "freq" to freq.toDouble())
             val busy = parts[0].toLong()
             val total = parts[1].toLong()
-            if (previousGpuTimes != null && (total - previousGTotal) > 0) { // Sửa nhẹ lỗi gõ thiếu chữ 'u' ở biến previousGpuTotal của bạn lúc trước
+            if (previousGpuTimes != null && (total - previousGpuTotal) > 0) {
                 val usagePct = ((busy - (previousGpuTimes?.get(0) ?: 0)).toDouble() / (total - previousGpuTotal).toDouble()) * 100.0
                 previousGpuTimes = longArrayOf(busy, total)
                 previousGpuTotal = total
@@ -295,7 +278,8 @@ object PerformancePluginObject {
         else -> "Unknown"
     }
 
-    private fun getRamInfo(context: Context): Map<String, Any> {
+    // Đổi từ private fun sang fun để MainActivity.kt có thể truy cập được dữ liệu RAM công khai
+    fun getRamInfo(context: Context): Map<String, Any> {
         val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
         val memoryInfo = ActivityManager.MemoryInfo()
         activityManager.getMemoryInfo(memoryInfo)
@@ -314,4 +298,3 @@ object PerformancePluginObject {
         }
     }
 }
-
