@@ -66,7 +66,7 @@ class SystemGraphs extends StatelessWidget {
   LineChartBarData _buildDashedLine(List<FlSpot> spots, Color color, double width) => LineChartBarData(
     spots: spots, isCurved: true, color: color, barWidth: width, isStrokeCapRound: true,
     dotData: const FlDotData(show: false), dashArray: [6, 4],
-    belowBarData: const BarAreaData(show: false),
+    belowBarData: BarAreaData(show: false),
   );
 
   Widget _legendDot(Color color, String label) => Row(mainAxisSize: MainAxisSize.min, children: [
