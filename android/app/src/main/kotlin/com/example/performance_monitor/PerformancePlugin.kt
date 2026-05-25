@@ -31,6 +31,7 @@ class PerformanceMonitorPlugin: FlutterPlugin, MethodCallHandler {
     }
 
     override fun onMethodCall(call: MethodCall, result: Result) {
+        // Tách luồng chạy ngầm để không gây đơ và văng app khi gọi từ Flutter
         val executor = Executors.newSingleThreadExecutor()
         executor.execute {
             try {
@@ -328,35 +329,5 @@ object PerformancePlugin {
             "voltage" to voltage,
             "status" to statusStr,
             "charging" to charging,
-            "health" to getBatteryHealth(batteryStatus?.getIntExtra(BatteryManager.EXTRA_HEALTH, 0) ?: 0)
-        )
-    }
-
-    private fun getBatteryHealth(health: Int): String = when (health) {
-        BatteryManager.BATTERY_HEALTH_GOOD -> "Good"
-        BatteryManager.BATTERY_HEALTH_OVERHEAT -> "Overheat"
-        BatteryManager.BATTERY_HEALTH_DEAD -> "Dead"
-        BatteryManager.BATTERY_HEALTH_OVER_VOLTAGE -> "Over Voltage"
-        BatteryManager.BATTERY_HEALTH_UNSPECIFIED_FAILURE -> "Failure"
-        else -> "Unknown"
-    }
-
-    fun getRamInfo(context: Context): Map<String, Any> {
-        val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-        val memoryInfo = ActivityManager.MemoryInfo()
-        activityManager.getMemoryInfo(memoryInfo)
-        val totalRam = memoryInfo.totalMem / (1024.0 * 1024 * 1024)
-        val availableRam = memoryInfo.availMem / (1024.0 * 1024 * 1024)
-        val usedRam = totalRam - availableRam
-        return mapOf("usage" to usedRam, "total" to totalRam)
-    }
-
-    private fun getThrottleStatus(cpuTemp: Int, gpuTemp: Int): String {
-        val maxTemp = maxOf(cpuTemp, gpuTemp)
-        return when {
-            maxTemp > 85 -> "Critical"
-            maxTemp > 72 -> "Warning"
-            else -> "Normal"
-        }
-    }
-}
+            "health" to getBatteryHealth(batteryStatus?.getIntExtra(BatteryManager.EXTRA_HEALTH,
+                                                                    
