@@ -6,8 +6,6 @@ workflows:
     environment:
       flutter: stable
       java: 17
-      vars:
-        GEMINI_API_KEY: ""  # Set this in Codemagic UI > Environment variables
     triggering:
       events:
         - push
@@ -27,9 +25,10 @@ workflows:
           dart run flutter_launcher_icons || echo "Warning: Icon generation skipped"
           
           echo "Building release APK..."
+          # GEMINI_API_KEY is optional - set in Codemagic UI > Environment variables
           flutter build apk --release \
             --target-platform android-arm64 \
-            --dart-define=GEMINI_API_KEY="$GEMINI_API_KEY" \
+            --dart-define=GEMINI_API_KEY="${GEMINI_API_KEY:-}" \
             --android-skip-build-dependency-validation 2>&1
     artifacts:
       - build/app/outputs/flutter-apk/app-release.apk
