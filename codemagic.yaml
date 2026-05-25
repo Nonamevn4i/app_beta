@@ -23,5 +23,9 @@ workflows:
     artifacts:
       - build/app/outputs/flutter-apk/app-release.apk
     publishing:
-      github_releases:
-        enabled: false
+  github_releases:
+    tag: v1.0.0 # Ví dụ tag
+    title: Release v1.0.0
+    description: "Mô tả bản phát hành của bạn"
+    # Ghi chú: File artifact sẽ tự động được đính kèm nếu bạn khai báo đúng trong phần artifacts
+    
