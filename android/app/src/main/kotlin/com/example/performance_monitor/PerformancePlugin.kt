@@ -31,7 +31,6 @@ class PerformanceMonitorPlugin: FlutterPlugin, MethodCallHandler {
     }
 
     override fun onMethodCall(call: MethodCall, result: Result) {
-        // Sử dụng Executor để chạy ngầm toàn bộ các lệnh gọi lấy dữ liệu phần cứng, chống nghẽn Main Thread gây văng ứng dụng
         val executor = Executors.newSingleThreadExecutor()
         executor.execute {
             try {
@@ -94,7 +93,6 @@ object PerformancePlugin {
         if (isCountingFps) return
         isCountingFps = true
         lastFpsTimestamp = System.currentTimeMillis()
-        // Đảm bảo Choreographer luôn chạy trên luồng chính của hệ thống UI Android
         android.os.Handler(android.os.Looper.getMainLooper()).post {
             Choreographer.getInstance().postFrameCallback(frameCallback)
         }
@@ -281,7 +279,6 @@ object PerformancePlugin {
         }
         var ping = 25.0
         try {
-            // Thực hiện ping bất đồng bộ an toàn qua dòng lệnh thay vì isReachable block luồng chính
             val process = Runtime.getRuntime().exec("ping -c 1 -w 1 8.8.8.8")
             val exitValue = process.waitFor()
             if (exitValue != 0) {
@@ -346,3 +343,16 @@ object PerformancePlugin {
         activityManager.getMemoryInfo(memoryInfo)
         val totalRam = memoryInfo.totalMem / (1024.0 * 1024 * 1024)
         val availableRam = memoryInfo.availMem / (1024.0 * 1024 * 1024)
+        val usedRam = totalRam - availableRam
+        return mapOf("usage" to usedRam, "total" to totalRam)
+    }
+
+    private fun getThrottleStatus(cpuTemp: Int, gpuTemp: Int): String {
+        val maxTemp = maxOf(cpuTemp, gpuTemp)
+        return when {
+            maxTemp > 85 -> "Critical"
+            maxTemp > 72 -> "Warning"
+            else -> "Normal"
+        }
+    }
+}
