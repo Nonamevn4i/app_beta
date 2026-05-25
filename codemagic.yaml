@@ -2,7 +2,7 @@ workflows:
   nexus-build:
     name: NEXUS Overlay
     max_build_duration: 60
-    instance_type: linux
+    instance_type: mac_mini_m1
     environment:
       flutter: stable
       java: 17
