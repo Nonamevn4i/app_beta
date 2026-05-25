@@ -6,8 +6,6 @@ workflows:
     environment:
       flutter: stable
       java: 17
-      vars:
-        GEMINI_API_KEY: "${GEMINI_API_KEY}"
     triggering:
       events:
         - push
@@ -18,11 +16,7 @@ workflows:
       - name: Build APK
         script: |
           flutter build apk --release \
-            --dart-define=GEMINI_API_KEY=${GEMINI_API_KEY} \
             --target-platform android-arm64
     artifacts:
       - build/app/outputs/flutter-apk/app-release.apk
-    publishing:
-      github:
-        repo: Nonamevn4i/app_beta
-        
+      
