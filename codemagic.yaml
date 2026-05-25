@@ -13,13 +13,14 @@ workflows:
         - pattern: main
           include: true
     scripts:
-      - name: Fix Typo And Build APK
+      - name: Generate Icon And Build APK
         script: |
-          echo "Sửa triệt để lỗi gõ nhầm tệp manifest..."
-          find . -name "AndroidManifest.xml" -exec sed -i '' 's/@nimap\/launcher_icon/@mipmap\/launcher_icon/g' {} + 2>/dev/null || find . -name "AndroidManifest.xml" -exec sed -i 's/@nimap\/launcher_icon/@mipmap\/launcher_icon/g' {} +
-          
           flutter clean
           flutter pub get
+          
+          echo "Đang tự động khởi tạo bộ Icon mới..."
+          dart run flutter_launcher_icons
+          
           flutter build apk --release \
             --target-platform android-arm64 \
             --android-skip-build-dependency-validation
