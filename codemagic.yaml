@@ -13,8 +13,11 @@ workflows:
         - pattern: main
           include: true
     scripts:
-      - name: Build APK
+      - name: Fix Typo And Build APK
         script: |
+          echo "Sửa triệt để lỗi gõ nhầm tệp manifest..."
+          find . -name "AndroidManifest.xml" -exec sed -i '' 's/@nimap\/launcher_icon/@mipmap\/launcher_icon/g' {} + 2>/dev/null || find . -name "AndroidManifest.xml" -exec sed -i 's/@nimap\/launcher_icon/@mipmap\/launcher_icon/g' {} +
+          
           flutter clean
           flutter pub get
           flutter build apk --release \
