@@ -147,17 +147,17 @@ object PerformancePlugin {
         return cores
     }
 
-    private fun getMaxFreq(core: Int): Long = try {
+    fun getMaxFreq(core: Int): Long = try {
         BufferedReader(FileReader("/sys/devices/system/cpu/cpu$core/cpufreq/cpuinfo_max_freq"))
             .use { it.readLine()?.toLong()?.div(1000) ?: 0L }
     } catch (e: Exception) { 0L }
 
-    private fun getMinFreq(core: Int): Long = try {
+    fun getMinFreq(core: Int): Long = try {
         BufferedReader(FileReader("/sys/devices/system/cpu/cpu$core/cpufreq/cpuinfo_min_freq"))
             .use { it.readLine()?.toLong()?.div(1000) ?: 0L }
     } catch (e: Exception) { 0L }
 
-    private fun getGovernor(core: Int): String = try {
+    fun getGovernor(core: Int): String = try {
         BufferedReader(FileReader("/sys/devices/system/cpu/cpu$core/cpufreq/scaling_governor"))
             .use { it.readLine() ?: "unknown" }
     } catch (e: Exception) { "unknown" }
@@ -184,7 +184,7 @@ object PerformancePlugin {
                 return mapOf("usage" to 25.0, "freqMax" to getMaxCpuFreq())
             }
             val totalDelta = (totalTime - previousTotalTime).toDouble()
-            val idleDelta = (idle - (previousCpuTimes?.get(3) ?: 0)).toDouble()
+            val idleDelta = (idle - (previousCpuTimes?.get(3) ?: 0L)).toDouble()
             var usagePercent = if (totalDelta > 0) ((totalDelta - idleDelta) / totalDelta) * 100.0 else 0.0
             if (usagePercent <= 0.0 || usagePercent > 100.0) usagePercent = 32.5
             previousCpuTimes = currentCpuTimes
@@ -195,8 +195,8 @@ object PerformancePlugin {
         }
     }
 
-    private var previousGpuTimes: LongArray? = null
-    private var previousGpuTotal: Long = 0
+    private var previousGpuBusy: Long = 0L
+    private var previousGpuTotal: Long = 0L
 
     private fun getGpuInfo(): Map<String, Any> {
         val freq = try {
@@ -211,13 +211,17 @@ object PerformancePlugin {
             if (parts.size < 2) return mapOf("usage" to 15.0, "freq" to freq.toDouble())
             val busy = parts[0].toLong()
             val total = parts[1].toLong()
-            if (previousGpuTimes != null && (total - previousGpuTotal) > 0) {
-                val usagePct = ((busy - (previousGpuTimes?.get(0) ?: 0)).toDouble() / (total - previousGpuTotal).toDouble()) * 100.0
-                previousGpuTimes = longArrayOf(busy, total)
+            
+            val totalDelta = total - previousGpuTotal
+            val busyDelta = busy - previousGpuBusy
+            
+            if (previousGpuTotal > 0L && totalDelta > 0L) {
+                val usagePct = (busyDelta.toDouble() / totalDelta.toDouble()) * 100.0
+                previousGpuBusy = busy
                 previousGpuTotal = total
                 return mapOf("usage" to usagePct, "freq" to freq.toDouble())
             }
-            previousGpuTimes = longArrayOf(busy, total)
+            previousGpuBusy = busy
             previousGpuTotal = total
             mapOf("usage" to 0.0, "freq" to freq.toDouble())
         } catch (e: Exception) {
