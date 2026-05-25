@@ -23,6 +23,6 @@ workflows:
     artifacts:
       - build/app/outputs/flutter-apk/app-release.apk
     publishing:
-      github_releases:
+      github:
         prerelease: false
         
