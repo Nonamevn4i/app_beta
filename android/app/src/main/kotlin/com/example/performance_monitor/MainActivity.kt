@@ -4,33 +4,36 @@ import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
-class MainActivity : FlutterActivity() {
-    private val CHANNEL = "com.example.performance_monitor/telemetry"
+class MainActivity: FlutterActivity() {
+    private val CHANNEL = "performance_monitor"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
-        MethodChannel(
-            flutterEngine.dartExecutor.binaryMessenger,
-            CHANNEL
-        ).setMethodCallHandler { call, result ->
+        MethodChannel(flutterEngine.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "getTelemetry" -> {
-                    val telemetry = PerformancePlugin.getTelemetry(this)
+                    val telemetry = PerformancePlugin.getTelemetry(applicationContext)
                     result.success(telemetry)
                 }
-                "getCpuCores" -> {
-                    val cores = PerformancePlugin.getCpuCoreDetails()
-                    result.success(cores)
+                "getCpuCoreDetails" -> {
+                    val coreDetails = PerformancePlugin.getCpuCoreDetails()
+                    result.success(coreDetails)
                 }
                 "getNetworkStats" -> {
-                    val stats = PerformancePlugin.getNetworkStats()
-                    result.success(stats)
+                    val netStats = PerformancePlugin.getNetworkStats()
+                    result.success(netStats)
                 }
                 "getBatteryInfo" -> {
-                    val battery = PerformancePlugin.getBatteryInfo(this)
-                    result.success(battery)
+                    val batteryInfo = PerformancePlugin.getBatteryInfo(applicationContext)
+                    result.success(batteryInfo)
                 }
-                else -> result.notImplemented()
+                "getRamInfo" -> {
+                    val ramInfo = PerformancePlugin.getRamInfo(applicationContext)
+                    result.success(ramInfo)
+                }
+                else -> {
+                    result.notImplemented()
+                }
             }
         }
     }
