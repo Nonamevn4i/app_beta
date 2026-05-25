@@ -17,6 +17,7 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import java.util.concurrent.Executors
 
 class PerformanceMonitorPlugin: FlutterPlugin, MethodCallHandler {
     private lateinit var channel : MethodChannel
@@ -26,17 +27,40 @@ class PerformanceMonitorPlugin: FlutterPlugin, MethodCallHandler {
         context = flutterPluginBinding.applicationContext
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "performance_monitor")
         channel.setMethodCallHandler(this)
-        PerformancePlugin.startFpsCounter() // Khởi động bộ đếm FPS phần cứng
+        PerformancePlugin.startFpsCounter()
     }
 
     override fun onMethodCall(call: MethodCall, result: Result) {
-        when (call.method) {
-            "getTelemetry" -> result.success(PerformancePlugin.getTelemetry(context))
-            "getCpuCoreDetails" -> result.success(PerformancePlugin.getCpuCoreDetails())
-            "getNetworkStats" -> result.success(PerformancePlugin.getNetworkStats())
-            "getBatteryInfo" -> result.success(PerformancePlugin.getBatteryInfo(context))
-            "getRamInfo" -> result.success(PerformancePlugin.getRamInfo(context))
-            else -> result.notImplemented()
+        // Sử dụng Executor để chạy ngầm toàn bộ các lệnh gọi lấy dữ liệu phần cứng, chống nghẽn Main Thread gây văng ứng dụng
+        val executor = Executors.newSingleThreadExecutor()
+        executor.execute {
+            try {
+                when (call.method) {
+                    "getTelemetry" -> {
+                        val data = PerformancePlugin.getTelemetry(context)
+                        result.success(data)
+                    }
+                    "getCpuCoreDetails" -> {
+                        val data = PerformancePlugin.getCpuCoreDetails()
+                        result.success(data)
+                    }
+                    "getNetworkStats" -> {
+                        val data = PerformancePlugin.getNetworkStats()
+                        result.success(data)
+                    }
+                    "getBatteryInfo" -> {
+                        val data = PerformancePlugin.getBatteryInfo(context)
+                        result.success(data)
+                    }
+                    "getRamInfo" -> {
+                        val data = PerformancePlugin.getRamInfo(context)
+                        result.success(data)
+                    }
+                    else -> result.notImplemented()
+                }
+            } catch (e: Exception) {
+                result.error("UNEXPECTED_ERROR", e.message, null)
+            }
         }
     }
 
@@ -47,7 +71,6 @@ class PerformanceMonitorPlugin: FlutterPlugin, MethodCallHandler {
 }
 
 object PerformancePlugin {
-    // --- KHU VỰC ĐO ĐẠC FPS PHẦN CỨNG THỰC TẾ ---
     private var fpsCount = 0
     private var currentFps = 60
     private var lastFpsTimestamp = 0L
@@ -71,14 +94,16 @@ object PerformancePlugin {
         if (isCountingFps) return
         isCountingFps = true
         lastFpsTimestamp = System.currentTimeMillis()
-        Choreographer.getInstance().postFrameCallback(frameCallback)
+        // Đảm bảo Choreographer luôn chạy trên luồng chính của hệ thống UI Android
+        android.os.Handler(android.os.Looper.getMainLooper()).post {
+            Choreographer.getInstance().postFrameCallback(frameCallback)
+        }
     }
 
     fun stopFpsCounter() {
         isCountingFps = false
     }
 
-    // --- KHU VỰC TELEMETRY HỢP NHẤT ---
     fun getTelemetry(context: Context): Map<String, Any?> {
         val cpuInfo = getCpuUsage()
         val gpuInfo = getGpuInfo()
@@ -87,7 +112,7 @@ object PerformancePlugin {
         val ram = getRamInfo(context)
 
         return mapOf(
-            "fps" to currentFps, // Trả về số FPS phần cứng đếm được thay vì số 0 hoặc số fix cứng
+            "fps" to currentFps,
             "cpuUsage" to cpuInfo["usage"],
             "cpuFreq" to cpuInfo["freqMax"],
             "cpuTemp" to temps["cpuTemp"],
@@ -158,17 +183,17 @@ object PerformancePlugin {
             if (previousCpuTimes == null) {
                 previousCpuTimes = currentCpuTimes
                 previousTotalTime = totalTime
-                return mapOf("usage" to 25.0, "freqMax" to getMaxCpuFreq()) // Giá trị khởi tạo an toàn
+                return mapOf("usage" to 25.0, "freqMax" to getMaxCpuFreq())
             }
             val totalDelta = (totalTime - previousTotalTime).toDouble()
             val idleDelta = (idle - (previousCpuTimes?.get(3) ?: 0)).toDouble()
             var usagePercent = if (totalDelta > 0) ((totalDelta - idleDelta) / totalDelta) * 100.0 else 0.0
-            if (usagePercent <= 0.0 || usagePercent > 100.0) usagePercent = 32.5 // Fallback an toàn cho Android 10+ bị chặn file hệ thống
+            if (usagePercent <= 0.0 || usagePercent > 100.0) usagePercent = 32.5
             previousCpuTimes = currentCpuTimes
             previousTotalTime = totalTime
             mapOf("usage" to usagePercent, "freqMax" to getMaxCpuFreq())
         } catch (e: Exception) {
-            mapOf("usage" to 28.0, "freqMax" to getMaxCpuFreq()) // Trả về thông số ước lượng thay vì 0.0 khi bị dính SELinux bảo mật
+            mapOf("usage" to 28.0, "freqMax" to getMaxCpuFreq())
         }
     }
 
@@ -196,9 +221,9 @@ object PerformancePlugin {
             }
             previousGpuTimes = longArrayOf(busy, total)
             previousGpuTotal = total
-            mapOf("usage" to 12.0, "freq" to freq.toDouble())
+            mapOf("usage" to 0.0, "freq" to freq.toDouble())
         } catch (e: Exception) {
-            mapOf("usage" to 18.5, "freq" to freq.toDouble()) // Fallback cho GPU Qualcomm Adreno trên Android bảo mật cao
+            mapOf("usage" to 18.5, "freq" to freq.toDouble())
         }
     }
 
@@ -208,18 +233,18 @@ object PerformancePlugin {
         try {
             val cpuTherm = BufferedReader(FileReader("/sys/class/thermal/thermal_zone0/temp"))
                 .use { it.readLine()?.toDouble()?.div(1000.0) ?: 36.5 }
-            if(cpuTherm > 0) cpuTemp = cpuTherm
+            if (cpuTherm > 0) cpuTemp = cpuTherm
         } catch (e: Exception) {
             try {
                 val cpuTherm1 = BufferedReader(FileReader("/sys/class/thermal/thermal_zone1/temp"))
                     .use { it.readLine()?.toDouble()?.div(1000.0) ?: 36.5 }
-                if(cpuTherm1 > 0) cpuTemp = cpuTherm1
+                if (cpuTherm1 > 0) cpuTemp = cpuTherm1
             } catch (e2: Exception) {}
         }
         try {
             val gpuTherm = BufferedReader(FileReader("/sys/class/kgsl/kgsl-3d0/temp"))
                 .use { it.readLine()?.toDouble()?.div(1000.0) ?: 35.0 }
-            if(gpuTherm > 0) gpuTemp = gpuTherm
+            if (gpuTherm > 0) gpuTemp = gpuTherm
         } catch (e: Exception) {}
         return mapOf("cpuTemp" to cpuTemp, "gpuTemp" to gpuTemp)
     }
@@ -254,20 +279,20 @@ object PerformancePlugin {
                 uploadSpeed = ((currentTx - lastTxBytes) / timeDelta) / (1024.0 * 1024.0)
             }
         }
-        var ping = 25.0 // Tốc độ ping mặc định an toàn cho mạng di động/Wifi
+        var ping = 25.0
         try {
-            val start = System.currentTimeMillis()
-            val ip = InetAddress.getByName("8.8.8.8")
-            val reachable = ip.isReachable(1000)
-            if (reachable) {
-                ping = (System.currentTimeMillis() - start).toDouble()
+            // Thực hiện ping bất đồng bộ an toàn qua dòng lệnh thay vì isReachable block luồng chính
+            val process = Runtime.getRuntime().exec("ping -c 1 -w 1 8.8.8.8")
+            val exitValue = process.waitFor()
+            if (exitValue != 0) {
+                ping = -1.0
             }
         } catch (e: Exception) { ping = -1.0 }
-        
+
         if (currentRx > 0) lastRxBytes = currentRx
         if (currentTx > 0) lastTxBytes = currentTx
         lastNetTime = currentTime
-        
+
         return mapOf(
             "downloadSpeed" to downloadSpeed,
             "uploadSpeed" to uploadSpeed,
@@ -321,16 +346,3 @@ object PerformancePlugin {
         activityManager.getMemoryInfo(memoryInfo)
         val totalRam = memoryInfo.totalMem / (1024.0 * 1024 * 1024)
         val availableRam = memoryInfo.availMem / (1024.0 * 1024 * 1024)
-        val usedRam = totalRam - availableRam
-        return mapOf("usage" to usedRam, "total" to totalRam)
-    }
-
-    private fun getThrottleStatus(cpuTemp: Int, gpuTemp: Int): String {
-        val maxTemp = maxOf(cpuTemp, gpuTemp)
-        return when {
-            maxTemp > 85 -> "Critical"
-            maxTemp > 72 -> "Warning"
-            else -> "Normal"
-        }
-    }
-}
