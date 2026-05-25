@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowBackground">#FF050505</item>
+        <item name="android:statusBarColor">#FF050505</item>
+        <item name="android:navigationBarColor">#FF050505</item>
+    </style>
+    <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowBackground">#FF050505</item>
+    </style>
+</resources>

@@ -1,0 +1,17 @@
+.dart_tool/
+.packages
+build/
+.android/
+.ios/
+.macos/
+.linux/
+.web/
+.windows/
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+.DS_Store
+*.log
+local.properties
