@@ -24,7 +24,5 @@ workflows:
       - build/app/outputs/flutter-apk/app-release.apk
     publishing:
       github_releases:
-        tag: v1.0.0
-        title: Release v1.0.0
-        description: "Mô tả bản phát hành của bạn"
+        prerelease: false
         
