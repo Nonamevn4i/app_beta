@@ -60,6 +60,7 @@ class CpuCoreInfo {
   final int maxFrequency;
   final int minFrequency;
   final String governor;
+  final double usage;
 
   CpuCoreInfo({
     required this.core,
@@ -67,6 +68,7 @@ class CpuCoreInfo {
     this.maxFrequency = 0,
     this.minFrequency = 0,
     this.governor = 'unknown',
+    this.usage = 0.0,
   });
 
   factory CpuCoreInfo.fromMap(Map<String, dynamic> map) {
@@ -76,6 +78,7 @@ class CpuCoreInfo {
       maxFrequency: (map['maxFrequency'] as num?)?.toInt() ?? 0,
       minFrequency: (map['minFrequency'] as num?)?.toInt() ?? 0,
       governor: map['governor'] as String? ?? 'unknown',
+      usage: (map['usage'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }

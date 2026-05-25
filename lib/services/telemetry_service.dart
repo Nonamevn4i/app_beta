@@ -6,32 +6,40 @@ class TelemetryService {
 
   TelemetryData _lastKnown = TelemetryData();
   List<CpuCoreInfo> _lastCores = [];
+  int _nativeFps = 0;
 
   TelemetryData get lastKnown => _lastKnown;
   List<CpuCoreInfo> get lastCores => _lastCores;
 
+  // Try to get real data, fall back to simulated on error
   Future<TelemetryData> fetchTelemetry() async {
     try {
       final result = await _channel.invokeMethod<Map<dynamic, dynamic>>('getTelemetry');
       if (result != null) {
-        _lastKnown = TelemetryData.fromMap(Map<String, dynamic>.from(result));
+        final map = Map<String, dynamic>.from(result);
+        _lastKnown = TelemetryData.fromMap(map);
+        _nativeFps = _lastKnown.fps;
+        return _lastKnown;
       }
     } catch (e) {
-      _lastKnown = _simulatedTelemetry();
+      // Native channel failed, fall back to simulated
     }
-    return _lastKnown;
+    return _simulatedTelemetry();
   }
 
   Future<List<CpuCoreInfo>> fetchCpuCores() async {
     try {
       final result = await _channel.invokeMethod<List<dynamic>>('getCpuCores');
       if (result != null) {
-        _lastCores = result.map((e) => CpuCoreInfo.fromMap(Map<String, dynamic>.from(e))).toList();
+        _lastCores = result.map((e) {
+          return CpuCoreInfo.fromMap(Map<String, dynamic>.from(e as Map));
+        }).toList();
+        return _lastCores;
       }
     } catch (e) {
-      _lastCores = _simulatedCores();
+      // Fall back to simulated
     }
-    return _lastCores;
+    return _simulatedCores();
   }
 
   Future<Map<String, dynamic>> fetchNetworkStats() async {
@@ -50,6 +58,8 @@ class TelemetryService {
     return _simulatedBattery();
   }
 
+  // --- Simulated fallbacks ---
+
   TelemetryData _simulatedTelemetry() {
     final cpu = 15.0 + (_random() * 70);
     final gpu = 20.0 + (_random() * 60);
@@ -59,7 +69,7 @@ class TelemetryService {
     if (cpuT > 80 || gpuT > 80) throttle = 'Critical';
     else if (cpuT > 68 || gpuT > 68) throttle = 'Warning';
     return TelemetryData(
-      fps: _lastKnown.fps > 0 ? _lastKnown.fps : 120,
+      fps: _nativeFps > 0 ? _nativeFps : 120,
       cpuUsage: cpu, cpuFreq: 1.2 + (cpu / 100) * 2.8,
       cpuTemp: cpuT, gpuUsage: gpu, gpuFreq: 0.5 + (gpu / 100) * 1.5,
       gpuTemp: gpuT, ramUsage: 3.2 + _random() * 4, ramTotal: 12,
